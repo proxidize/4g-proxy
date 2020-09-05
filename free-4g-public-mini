@@ -1,0 +1,182 @@
+#!/bin/bash
+echo "Proxidize FREE 4G MOBILE SCRIPT INSTALLING `date`">/var/log/INSTALLATION_LOG;trap '[ "$?" -ne 77 ]||exit 77' ERR;DECLARE_ESS_VARS(){ ADMIN_DEBUGGING="$1";DEBUGGING="$2";if [[ -z "$1" ]];then ADMIN_DEBUGGING="false";DEBUGGING="false";fi;if [[ "$DEBUGGING" == "true" ]];then echo "$ADMIN_DEBUGGING";echo "$DEBUGGING";sleep 2;else ADMIN_DEBUGGING="false";DEBUGGING="false";fi;PKG_MANAGER="apt-get";UPDATE_PKG_CACHE="${PKG_MANAGER} update";SHOW_ROUTE="ip -o -4 route show to default";START_PROXY="sh /usr/local/etc/3proxy/scripts/rc.d/proxy.sh start > /dev/null 2>&1";STOP_PROXY="sh /usr/local/etc/3proxy/scripts/rc.d/proxy.sh stop > /dev/null 2>&1";PKG_INSTALL=(${PKG_MANAGER} --yes --no-install-recommends install);DISTRO_COMPILER="make";DIRECTORY_MAKER="mkdir";FILE_MAKER="touch";MAKE_EXECUTABLE="chmod +x";PKG_COUNT="${PKG_MANAGER} -s -o Debug::NoLocking=true upgrade | grep -c ^Inst || true";APT_SOURCES="/etc/apt/sources.list";PKG_INSTALLER="${PKG_MANAGER} install";LOCAL_DIRECTORY="/usr/local/etc";CONFIGURATION_FILE="${LOCAL_DIRECTORY}/3proxy/cfg/3proxy.cfg";CONFIGURATION_BACKUP_FILE="/etc/3proxy.cfg.backup";INSTALLATION_LOG="/etc/ProxyKnow/log/INSTALLATION_LOG";ROTATION_LOG_FILE="/etc/ProxyKnow/log/ROTATION_LOG";ROUTING_LINK="ip -o -4 link show";ROUTING_ADDRESSES="ip -o -4 address show";SYSTEM_RUN_LEVEL="runlevel";RED='\033[1;31m';NC='\033[0m';GREEN='\e[92m';IPSITE="http://eth0.me";};DECLARE_ESS_VARS;echo "";echo "";echo -e "${GREEN}FREE 4G MOBILE SCRIPT INSTALLING${NC}";echo "";sleep 3;printf "PROCESSING, PLEASE DON'T TOUCH ANYTHING.....";if ${DEBUGGING};then echo "";echo "DEBUGGING MODE ON - FREE 4G SCRIPT";echo "";sleep 1;printf "SECTION [1] STARTED\n";fi;BUILD_ESS(){ ${DIRECTORY_MAKER} /etc/ProxyKnow>/dev/null 2>&1;${DIRECTORY_MAKER} /etc/ProxyKnow/log>/dev/null 2>&1;${DIRECTORY_MAKER} /etc/ProxyKnow/cfg>/dev/null 2>&1;${FILE_MAKER} ${INSTALLATION_LOG}>/dev/null 2>&1;};BUILD_ESS;CLEAN_FIREWALL(){ iptables -F;iptables -t mangle -F;iptables -t nat -F;iptables -P INPUT ACCEPT;iptables -P FORWARD ACCEPT;iptables -P OUTPUT ACCEPT;iptables -A INPUT -p tcp --match multiport --dport 22,443,80,8080 -j ACCEPT;iptables -A INPUT -p udp --match multiport --dport 443,80,8080 -j ACCEPT;};CLEAN_FIREWALL;GET_DISTRO(){ if [[ $OSTYPE == *"linux"* ]];then RELEASE=$(cat /etc/os-release);if [[ $RELEASE == *"ID=raspbian"* ]];then RELEASE=RASPBIAN;echo "CONFIRMED DISTRO ${RELEASE} @ `date`">>${INSTALLATION_LOG};else printf "ERROR, SCRIPT CAN ONLY RUN ON RASPBERRY PI\n";exit 1;fi;else printf "ERROR, SCRIPT CAN ONLY RUN ON LINUX SYSTEMS\n";exit 1;fi;};GET_DISTRO;GET_PRIVILAGE(){ if [[ "${EUID}" -eq 0 ]];then echo "CONFIRMED ROOT PRIVILAGE ON ${RELEASE} @ `date`">>${INSTALLATION_LOG};else printf "ERROR ADMIN MUST RUN UNDER ADMIN SU PRIVILAGE\n";printf "RUN THE COMMAND \"sudo su\" BEFORE RUNNING THE SCRIPT\n";exit 1;fi;};GET_PRIVILAGE;KILL_PROCESSES(){ ${STOP_PROXY}>/dev/null 2>&1;killall 3proxy.cfg>/dev/null 2>&1;killall bluetoothd>/dev/null 2>&1;killall rotation>/dev/null 2>&1;killall RotationManager>/dev/null 2>&1;killall SecurityManager>/dev/null 2>&1;systemctl stop ProxyKnowManager>/dev/null 2>&1;killall ProxyKnowManage>/dev/null 2>&1;};KILL_PROCESSES;if ${DEBUGGING};then printf "SECTION [1] NO ERRORS\n";fi;if ${DEBUGGING};then printf "SECTION [2] STARTED\n";fi;COLLECT_DEVICE_INFORMAION(){ NETWORK_GATEWAY_1=$(ip -o -4 route show to default|awk '{print $3}'|sed '1!d');NETWORK_INTERFACE_1=$(ip -o -4 route show to default|awk '{print $5}'|sed '1!d');INTERNAL_IP_1=$(ip -o -4 route show to default|awk '{print $7}'|sed '1!d');NETWORK_GATEWAY_2=$(ip -o -4 route show to default|awk '{print $3}'|sed '2!d');NETWORK_INTERFACE_2=$(ip -o -4 route show to default|awk '{print $5}'|sed '2!d');INTERNAL_IP_2=$(ip -o -4 route show to default|awk '{print $7}'|sed '2!d');if [[ $NETWORK_INTERFACE_1 == *"wlan"* ]]||[[ $NETWORK_INTERFACE_2 == *"wlan"* ]];then echo -e "${RED} ERROR! WIFI MUST BE DISABLED. ${NC}";exit 1;else CONNECTION_METHOD="Ethernet";fi;NETWORK_INTERFACE_3=$(ip -o -4 route show to default|awk '{print $5}');if [[ $NETWORK_INTERFACE_3 == *"wlan"* ]];then echo "ERROR: BOTH WIFI AND ETHERNET ARE ON.">>${INSTALLATION_LOG};echo -e "${RED}ERROR! WIFI MUST BE DISABLED.${NC}";exit 1;fi;if [[ $(lsusb|grep Huawei -c) == 0 ]];then echo "ERROR: NO USB MODEM DETECTED";exit 1;elif [[ $(lsusb|grep Huawei -c) -gt 1 ]];then echo "ERROR: ONLY 1 USB MODEM CAN BE CONNECTED";exit 1;fi;D_MOD=$(lsusb);if [[ ${D_MOD} == *"3372"* ]];then WAIT_PERIOD=35;else echo "ERROR: ONLY THE HUAWEI E3372H IS SUPPORTED!";exit 1;fi;};COLLECT_DEVICE_INFORMAION;if ${DEBUGGING};then printf "SECTION [2] NO ERRORS\n";fi;if ${DEBUGGING};then printf "SECTION [3] STARTED\n";fi;COLLECT_CONNECTION_INFORMATION(){ if [[ $CONNECTION_METHOD == *"thernet"* ]]||[[ $CONNECTION_METHOD == *"THERN"* ]];then ROUTING_ENTRY_1=$(ip -o -4 route show to default|sed '1!d');NETWORK_GATEWAY_1=$(ip -o -4 route show to default|awk '{print $3}'|sed '1!d');NETWORK_INTERFACE_1=$(ip -o -4 route show to default|awk '{print $5}'|sed '1!d');INTERNAL_IP_1=$(ip -o -4 route show to default|awk '{print $7}'|sed '1!d');ROUTING_ENTRY_2=$(ip -o -4 route show to default|sed '2!d');NETWORK_GATEWAY_2=$(ip -o -4 route show to default|awk '{print $3}'|sed '2!d');NETWORK_INTERFACE_2=$(ip -o -4 route show to default|awk '{print $5}'|sed '2!d');INTERNAL_IP_2=$(ip -o -4 route show to default|awk '{print $7}'|sed '2!d');dPROXY_PORTs=443,80,8080,53;if [[ $INTERNAL_IP_2 == "dhcp" ]];then INTERNAL_IP_2=$(ip -o -4 route show to default|awk '{print $9}'|sed '2!d');if [[ $INTERNAL_IP_1 == "dhcp" ]];then INTERNAL_IP_1=$(ip -o -4 route show to default|awk '{print $9}'|sed '1!d');fi;fi;else printf "ERROR: UNABLE TO DETERMINE CONNECTION METHOD\n";exit 1;fi;LOG_CONNECTION_INFORMATION(){ echo "">>/etc/ProxyKnow/iplog;echo "">>"${INSTALLATION_LOG}";echo "AUTOMATIC ROTATION STARTED @ `date` ">>"${INSTALLATION_LOG}";echo "">>"${INSTALLATION_LOG}";echo "ROUTING_ENTRY_1 = ${ROUTING_ENTRY_1}">>"${INSTALLATION_LOG}";echo "NETWORK_GATEWAY_1 = ${NETWORK_GATEWAY_1}">>"${INSTALLATION_LOG}";echo "NETWORK_INTERFACE_1 = ${NETWORK_INTERFACE_1}">>"${INSTALLATION_LOG}";echo "INTERNAL_IP_1 = ${INTERNAL_IP_1}">>"${INSTALLATION_LOG}";echo "ROUTING_ENTRY_2 = ${ROUTING_ENTRY_2}">>"${INSTALLATION_LOG}";echo "NETWORK_GATEWAY_2 = ${NETWORK_GATEWAY_2}">>"${INSTALLATION_LOG}";echo "NETWORK_INTERFACE_2 = ${NETWORK_INTERFACE_2}">>"${INSTALLATION_LOG}";echo "INTERNAL_IP_2 = ${INTERNAL_IP_2}">>"${INSTALLATION_LOG}";echo "n">>"${INSTALLATION_LOG}";ip li>>"${INSTALLATION_LOG}";ip a>>"${INSTALLATION_LOG}";};LOG_CONNECTION_INFORMATION;};COLLECT_CONNECTION_INFORMATION;if ${DEBUGGING};then printf "SECTION [3] NO ERRORS\n";fi;if ${DEBUGGING};then printf "SECTION [4] STARTED\n";fi;BUILD_PROXY(){ cd ${LOCAL_DIRECTORY};${PKG_INSTALLER} fail2ban software-properties-common -y>/dev/null 2>&1;${PKG_INSTALLER} build-essential libevent-dev libssl-dev -y>/dev/null 2>&1;${PKG_INSTALLER} curl -y;wget https://github.com/z3APA3A/3proxy/archive/0.8.12.tar.gz>/dev/null 2>&1;tar zxvf 0.8.12.tar.gz>/dev/null 2>&1;rm -f 0.8.12.tar.gz>/dev/null 2>&1;mv 3proxy-0.8.12 3proxy>/dev/null 2>&1;cd "${LOCAL_DIRECTORY}/3proxy";${DISTRO_COMPILER} -f Makefile.Linux;${DISTRO_COMPILER} -f Makefile.Linux install;${DIRECTORY_MAKER} log;cd "${LOCAL_DIRECTORY}/3proxy/cfg";rm "${LOCAL_DIRECTORY}/3proxy/cfg/3proxy.cfg.sample";};BUILD_PROXY>/dev/null 2>&1;if ${DEBUGGING};then printf "SECTION [4] NO ERRORS\n";fi;if ${DEBUGGING};then printf "SECTION [5] STARTED\n";fi;BUILD_PROXY_SERVER(){ echo "#!/usr/local/bin/3proxy
+daemon
+pidfile /usr/local/etc/3proxy/3proxy.pid
+nserver 1.1.1.1
+nserver 1.0.0.1
+nscache 65536
+timeouts 1 5 30 60 180 1800 15 60
+log /usr/local/etc/3proxy/log/3proxy.log D
+logformat \"- +_L%t.%. %N.%p %E %U %C:%c %R:%r %O %I %h %T\"
+archiver rar rar a -df -inul %A %F
+rotate 30
+internal 0.0.0.0
+external 0.0.0.0
+authcache ip 60
+">${CONFIGURATION_FILE};${MAKE_EXECUTABLE} ${CONFIGURATION_FILE};sed -i '14s/.*/       \/usr\/local\/etc\/3proxy\/cfg\/3proxy.cfg/' /usr/local/etc/3proxy/scripts/rc.d/proxy.sh;echo "#Testing & Logging proxy
+flush
+auth iponly
+allow * 127.0.0.1
+proxy -p1025 -a -n -i0.0.0.0 -e${INTERNAL_IP_2}
+flush
+">"${CONFIGURATION_FILE}.testing";sed -i "s/^[ \t]*//" ${CONFIGURATION_FILE}.testing;CONFIGURATION_FILE_DATA=$(cat ${CONFIGURATION_FILE});if [[ ! $CONFIGURATION_FILE_DATA == *"include"* ]];then echo "include "${CONFIGURATION_FILE}.testing"">>${CONFIGURATION_FILE};fi;INTERNAL_GATEWAY=$(ip -o -4 route show default|sed '1!d'|awk '{print $3}');INTERNAL_GATEWAY_SUBNET="$INTERNAL_GATEWAY/24";PROXY_PORT="2000";echo "auth none">>${CONFIGURATION_FILE};echo "allow * $INTERNAL_GATEWAY_SUBNET">>${CONFIGURATION_FILE};echo "proxy -p${PROXY_PORT} -a -n -i0.0.0.0 -e${INTERNAL_IP_2}">>${CONFIGURATION_FILE};sed -i "s/^[ \t]*//" ${CONFIGURATION_FILE};};BUILD_PROXY_SERVER;${STOP_PROXY}>/dev/null 2>&1;${START_PROXY}>/dev/null 2>&1;if ${DEBUGGING};then printf "SECTION: [5] NO ERRORS\n";fi;if ${DEBUGGING};then printf "SECTION: [6] STARTED\n";fi;BUILD_ROTATION_MANAGER(){ if [[ $CONNECTION_METHOD == *"thern"* ]]||[[ $CONNECTION_METHOD == *"THERN"* ]];then echo "#!/bin/bash
+# ETHERNET
+DECLARE_ESS() {
+PKG_MANAGER=\"apt-get\"
+UPDATE_PKG_CACHE=\"${PKG_MANAGER} update\"
+SHOW_ROUTE=\"ip -o -4 route show to default\"
+START_PROXY=\"sh /usr/local/etc/3proxy/scripts/rc.d/proxy.sh start > /dev/null 2>&1\"
+STOP_PROXY=\"sh /usr/local/etc/3proxy/scripts/rc.d/proxy.sh stop > /dev/null 2>&1\"
+PKG_INSTALL=(${PKG_MANAGER} --yes --no-install-recommends install)
+DISTRO_COMPILER=\"make\"
+DIRECTORY_MAKER=\"mkdir\"
+MAKE_EXECUTABLE=\"chmod +x\"
+PKG_COUNT=\"${PKG_MANAGER} -s -o Debug::NoLocking=true upgrade | grep -c ^Inst || true\"
+APT_SOURCES=\"/etc/apt/sources.list\"
+PKG_INSTALLER=\"${PKG_MANAGER} install\"
+LOCAL_DIRECTORY=\"/usr/local/etc\"
+CONFIGURATION_FILE=\"${LOCAL_DIRECTORY}/3proxy/cfg/3proxy.cfg\"
+CONFIGURATION_BACKUP_FILE=\"/etc/3proxy.cfg.backup\"
+ROUTING_RULES=\$(ip -o -4 rule list default)
+ROTATION_LOG_FILE=\"/etc/ProxyKnow/log/ROTATION_LOG\"
+ROUTING_LINK=\"ip -o -4 link show\"
+ROUTING_ADDRESSES=\"ip -o -4 address show\"
+IPSITE=\"http://eth0.me\"
+RotationManager_LOOP_COUNTER=1
+}
+DECLARE_ESS
+while true; do
+echo \"DOWN\" > /etc/ProxyKnow/RotationManager.status       
+\${STOP_PROXY} > /dev/null 2>&1
+RotationManager_LOOP_COUNTER=\$((RotationManager_LOOP_COUNTER+1))
+echo \"RotationManager_LOOP_COUNTER = \${RotationManager_LOOP_COUNTER}\" >> \${ROTATION_LOG_MAIN}
+COLLECT_INFO() {
+ROUTING_ENTRY_1=\$(ip -o -4 route show to default | sed '1!d')
+NETWORK_GATEWAY_1=\$(ip -o -4 route show to default | awk '{print \$3}' | sed '1!d')
+NETWORK_INTERFACE_1=\$(ip -o -4 route show to default | awk '{print \$5}' | sed '1!d')
+INTERNAL_IP_1=\$(ip -o -4 route show to default | awk '{print \$7}' | sed '1!d')
+ROUTING_ENTRY_2=\$(ip -o -4 route show to default | sed '2!d')
+NETWORK_GATEWAY_2=\$(ip -o -4 route show to default | awk '{print \$3}' | sed '2!d')
+NETWORK_INTERFACE_2=\$(ip -o -4 route show to default | awk '{print \$5}' | sed '2!d')
+INTERNAL_IP_2=\$(ip -o -4 route show to default | awk '{print \$7}' | sed '2!d')
+dPROXY_PORTs=443,80,8080,53
+shPROXY_PORT=5555
+if [[ \$INTERNAL_IP_2 == \"dhcp\" ]]; then
+INTERNAL_IP_2=\$(ip -o -4 route show to default | awk '{print \$9}' | sed '2!d')
+if [[ \$INTERNAL_IP_1 == \"dhcp\" ]]; then
+INTERNAL_IP_1=\$(ip -o -4 route show to default | awk '{print \$9}' | sed '1!d')
+fi
+fi
+}                
+COLLECT_INFO
+LOG_CONNECTION_INFORMATION(){
+echo \"\" >> /etc/ProxyKnow/iplog
+echo \"\" >> \"\${ROTATION_LOG_FILE}\"
+echo \"AUTOMATIC ROTATION STARTED @ \`date\` \" >> \"\${ROTATION_LOG_FILE}\"
+echo \"\" >> \"\${ROTATION_LOG_FILE}\"
+echo \"ROUTING_ENTRY_1 = \${ROUTING_ENTRY_1}\" >> \"\${ROTATION_LOG_FILE}\"
+echo \"NETWORK_GATEWAY_1 = \${NETWORK_GATEWAY_1}\" >> \"\${ROTATION_LOG_FILE}\"
+echo \"NETWORK_INTERFACE_1 = \${NETWORK_INTERFACE_1}\" >> \"\${ROTATION_LOG_FILE}\"
+echo \"INTERNAL_IP_1 = \${INTERNAL_IP_1}\" >> \"\${ROTATION_LOG_FILE}\"
+echo \"ROUTING_ENTRY_2 = \${ROUTING_ENTRY_2}\" >> \"\${ROTATION_LOG_FILE}\"
+echo \"NETWORK_GATEWAY_2 = \${NETWORK_GATEWAY_2}\" >> \"\${ROTATION_LOG_FILE}\"
+echo \"NETWORK_INTERFACE_2 = \${NETWORK_INTERFACE_2}\" >> \"\${ROTATION_LOG_FILE}\"
+echo \"INTERNAL_IP_2 = \${INTERNAL_IP_2}\" >> \"\${ROTATION_LOG_FILE}\"
+echo \"\n\" >> \"\${ROTATION_LOG_FILE}\"
+ip li >> \"\${ROTATION_LOG_FILE}\"
+ip a >> \"\${ROTATION_LOG_FILE}\"
+}
+LOG_CONNECTION_INFORMATION
+COLLECT_INFO
+BUILD_ROUTING_TABLE(){
+if [[ \${ROUTING_RULES} == *\"lookup 1\"* ]]; then
+echo "ROUTING RULE ALREADY EXISTS" >> \"\${ROTATION_LOG_FILE}\"
+ip rule del lookup 1
+ROUTING_RULES=\$(ip -o -4 rule list default)
+if [[ \${ROUTING_RULES} == *\"lookup 1\"* ]]; then
+echo "ROUTING RULE ALREADY EXISTS" >> \"\${ROTATION_LOG_FILE}\"
+ip rule del lookup 1
+ROUTING_RULES=\$(ip -o -4 rule list default)
+if [[ \${ROUTING_RULES} == *\"lookup 1\"* ]]; then
+echo "ROUTING RULE ALREADY EXISTS" >> \"\${ROTATION_LOG_FILE}\"
+ip rule del lookup 1
+ROUTING_RULES=\$(ip -o -4 rule list default)
+if [[ \${ROUTING_RULES} == *\"lookup 1\"* ]]; then
+echo "ROUTING RULE ALREADY EXISTS" >> \"\${ROTATION_LOG_FILE}\"
+ip rule del lookup 1
+ROUTING_RULES=\$(ip -o -4 rule list default)
+fi
+fi
+fi
+ip rule add from \$INTERNAL_IP_2 table 1
+else
+ip rule add from \$INTERNAL_IP_2 table 1
+fi
+ip route add default via \$NETWORK_GATEWAY_2 dev \$NETWORK_INTERFACE_2 src \$INTERNAL_IP_2 table 1
+}
+BUILD_ROUTING_TABLE
+CLEAN_FIREWALL(){
+iptables -F
+iptables -t mangle -F
+iptables -t nat -F
+iptables -P INPUT ACCEPT
+iptables -P FORWARD ACCEPT
+iptables -P OUTPUT ACCEPT
+iptables -A INPUT -p tcp --match multiport --dport 22,443,80,8080 -j ACCEPT
+iptables -A INPUT -p udp --match multiport --dport 443,80,8080 -j ACCEPT
+}
+CLEAN_FIREWALL
+\${START_PROXY} > /dev/null 2>&1
+echo \"UP\" > /etc/ProxyKnow/RotationManager.status
+sleep infinity
+done">/etc/ProxyKnow/RotationManager;else printf "ERROR: UNABLE TO DETERMINE CONNECTION METHOD\n";exit 1;fi;${MAKE_EXECUTABLE} /etc/ProxyKnow/RotationManager;};BUILD_ROTATION_MANAGER;if ${DEBUGGING};then printf "SECTION: [6] NO ERRORS\n";fi;if ${DEBUGGING};then printf "SECTION: [7] STARTED\n";fi;POST_INSTALLATION_MISC(){ sed -i '/200 eth1-table/d' /etc/iproute2/rt_tables;sed -i '/10001 1/d' /etc/iproute2/rt_tables;echo "10001 1">>/etc/iproute2/rt_tables;if ${DEBUGGING};then rm -f /etc/ProxyKnow/SecurityManager;fi;if [[ $IF_RESTORE == *"y"* ]]||[[ $IF_RESTORE == *"Y"* ]];then cp "${CONFIGURATION_BACKUP_FILE}" "${CONFIGURATION_FILE}";CONFIGURATION_FILE_DATA=$(cat ${CONFIGURATION_FILE});if [[ ! $CONFIGURATION_FILE_DATA == *"include"* ]];then echo "include "${CONFIGURATION_FILE}.testing"">>${CONFIGURATION_FILE};fi;${STOP_PROXY}>/dev/null 2>&1;${START_PROXY}>/dev/null 2>&1;sh /usr/local/etc/3proxy/scripts/rc.d/proxy.sh restart>/dev/null 2>&1;fi;};POST_INSTALLATION_MISC;if ${DEBUGGING};then printf "SECTION [7] NO ERRORS\n";fi;if ${DEBUGGING};then printf "SECTION [8]  STARTED\n";fi;BUILD_PROXYKNOW_MANAGER(){ echo "#!/bin/bash
+### BEGIN INIT INFO
+# Provides:          ProxyKnowManager
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start daemon at boot time
+# Description:       Enable service provided by daemon.
+### END INIT INFO
+SCRIPT=/etc/init.d/ProxyKnowManager
+RUNAS=root
+PIDFILE=/var/run/ProxyKnowManager.pid
+LOGFILE=/var/log/ProxyKnowManager.log
+start(){
+echo >> /etc/ProxyKnow/log/ROTATION_LOG_MAIN
+echo \"ProxyKnowManager STARTING @ \`date\`\" >> /etc/ProxyKnow/log/ROTATION_LOG_MAIN
+echo >> /etc/ProxyKnow/log/ROTATION_LOG_MAIN
+sh /usr/local/etc/3proxy/scripts/rc.d/proxy.sh stop > /dev/null 2>&1
+killall 3proxy.cfg
+killall RotationManager
+setsid /etc/ProxyKnow/RotationManager & >/dev/null 2>&1 & echo \$! > \"/etc/ProxyKnow/RotationManager.pid\"
+exit 0
+}
+stop(){
+echo >> /etc/ProxyKnow/log/ROTATION_LOG_MAIN
+echo \"ProxyKnowManager STOPPING @ \`date\`\" >> /etc/ProxyKnow/log/ROTATION_LOG_MAIN
+echo >> /etc/ProxyKnow/log/ROTATION_LOG_MAIN
+sh /usr/local/etc/3proxy/scripts/rc.d/proxy.sh stop > /dev/null 2>&1
+kill \$(cat /etc/ProxyKnow/RotationManager.pid) > /dev/null 2>&1
+killall 3proxy.cfg
+killall RotationManager
+exit 0
+}
+case \"\$1\" in 
+start)
+start
+;;
+stop)
+stop
+;;
+restart)
+stop
+start
+;;
+*)
+echo \"Usage: $0 {start|stop|restart}\"
+exit 1
+esac
+exit 0 
+">/etc/init.d/ProxyKnowManager;${MAKE_EXECUTABLE} /etc/init.d/ProxyKnowManager;sed -i "s/^[ \t]*//" /etc/init.d/ProxyKnowManager;};BUILD_PROXYKNOW_MANAGER;if ${DEBUGGING};then printf "SECTION [8] NO ERRORS\n";fi;if ${DEBUGGING};then printf "SECTION [9] STARTED\n";fi;BUILD_INITD_ENTRY(){ echo "FUNCTION BUILD_INITD_ENTRY started">>${INSTALLATION_LOG};sh /usr/local/etc/3proxy/scripts/rc.d/proxy.sh stop>/dev/null 2>&1;killall 3proxy.cfg>/dev/null 2>&1;killall rotation>/dev/null 2>&1;killall RotationManager>/dev/null 2>&1;killall SecurityManager>/dev/null 2>&1;systemctl stop ProxyKnowManager>/dev/null 2>&1;systemctl disable ProxyKnowManager>/dev/null 2>&1;killall ProxyKnowManage>/dev/null 2>&1;systemctl daemon-reload>/dev/null 2>&1;update-rc.d ProxyKnowManager defaults>/dev/null 2>&1;systemctl daemon-reload>/dev/null 2>&1;systemctl daemon-reload>/dev/null 2>&1;systemctl start ProxyKnowManager>/dev/null 2>&1;};BUILD_INITD_ENTRY;if ${DEBUGGING};then printf "SECTION [9] NO ERRORS\n";fi;if ${DEBUGGING};then printf "SECTION [10] STARTED\n";fi;VERIFY_PROXY_FUNCTION(){ IPSITE="http://eth0.me";CHECK_IF_IPSITE_DOWN(){ MOBILE_IP_ADDRESS=$(curl -s -m 60 -x 127.0.0.1:1025 ${IPSITE});ROUTER_IP_ADDRESS=$(curl -s -m 60 ${IPSITE});if [[ -z $MOBILE_IP_ADDRESS ]]||[[ ! $MOBILE_IP_ADDRESS =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]];then MOBILE_IP_ADDRESS=$(curl -s -m 60 -x 127.0.0.1:1025 http://ipinfo.io/ip);ROUTER_IP_ADDRESS=$(curl -s -m 60 http://ipinfo.io/ip);if [[ -n $MOBILE_IP_ADDRESS ]]&&[[ $MOBILE_IP_ADDRESS =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]];then echo "eth0.me is DOWN">>/etc/ProxyKnow/log/ROTATION_LOG_MAIN;IPSITE="http://ipinfo.io/ip";fi;fi;};CHECK_IF_IPSITE_DOWN;MOBILE_IP_ADDRESS=$(curl -s -m 120 -x 127.0.0.1:1025 ${IPSITE});ROUTER_IP_ADDRESS=$(curl -s -m 60 ${IPSITE});};VERIFY_PROXY_FUNCTION;if ${DEBUGGING};then printf "SECTION [10] NO ERRORS\n";fi;ANNOUNCE_SUCCESS(){ if [[ $IF_RESTORE == *"y"* ]]||[[ $IF_RESTORE == *"Y"* ]];then PROXY_PORT="UNKNOWN PORT";fi;INTERNAL_IP=$(hostname -I|awk '{print $1}');echo;echo -e "-------------------------------------------------------------";echo -e "                FREE 4G MOBILE SCRIPT IS DONE!";echo -e "${GREEN}                YOUR PROXY IS: $INTERNAL_IP:$PROXY_PORT ${NC}";echo -e "-------------------------------------------------------------";echo;};ANNOUNCE_SUCCESS;exit 0
