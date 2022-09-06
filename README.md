@@ -1,25 +1,36 @@
-# Create or build your own 4g mobile proxy
+# Create or build your own 4g mobile proxy farm
 
-How to create a 4G/LTE mobile proxy from a USB modem/dongle and a Raspberry Pi using Proxidize free script. With this script, making your own 4G mobile proxies is easier than ever.
+How to create a 4G/LTE mobile proxy from a USB modem/dongle and a Raspberry Pi using Proxidize free version.
 
-This the Proxidize free script, created to show users that making your own 4G proxies can be very simple.
-
-This script has minimal features and is only intended to be a demo explanation to show how simple the process of creating 4G proxies is.
-
-To install the script, get the hardware ready, and run it.
+Instructions for installing Proxidize free version.
 
 You find our full guide here: https://proxidize.com/how-to-make-a-4g-mobile-proxy/
 
 Learn more about Proxidize: https://proxidize.com
 
-The script works by routing the connection from the default router connection to the mobile network connected by the 4G dongle. This is done through a mixture of ip and iptables rules that ensure the routing is done correctly.
-
 Thank to CGNAT, 4G mobile proxies are superior to every other type of proxy as it camouflages the bots and/or automation software. This happens because the public IPV4 address used by the 4G mobile proxy is simultaneously used by hundreds or real users which makes IP bans a lot more difficult since 99% of the time the traffic fingerprint coming from the IP address will look 100% normal no matter how aggressive your automation settings are.
 
-Please note, not all mobile carriers do use CGNAT, but the vast majority of them do. You can check this by going into your phone setting and if your IP starts with 10.xx.xx.xx then you are most likely connected to a CGNAT network.
+---
 
-This script requires both a 4G mobile connection and a regular router connection. This is one of the downsides of CGNAT technology as it makes it impossible for a single device to control any particular port.
+## Installation
 
-This is not something you need to worry about with this script, since it's designed to be used internally only.
+First open a terminal with root privilage. Then, run the command:
 
-*Proxidize Android has been removed by Google Playstore due to a false positive. We'll be working to bring it back soon, along with other improvements to the script.
+```curl -fsSL pxfile.com/install | bash```
+
+It should take around 10 minues to set everything up.
+
+---
+
+
+## To create a 4G mobile proxy farm you need:
+1. Prepare the hardware
+2. Generate a free license key from proxidize.com
+3. Run the installation
+
+---
+
+## WARNING
+
+Do not install Proxidize on personal machines. Proxidize is more of an operating system layer and will take complete control of the host networking.
+
